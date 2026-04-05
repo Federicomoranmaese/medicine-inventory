@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.production
+
+# SQLite database
+data/db/
+*.db
+
+# Uploaded images
+data/images/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
