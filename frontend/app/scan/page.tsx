@@ -61,6 +61,7 @@ export default function ScanPage() {
   const [counts, setCounts] = useState<Record<number, number>>({});
   // Decisiones del usuario para productos no detectados por la IA
   const [missingDecisions, setMissingDecisions] = useState<Record<number, 'unseen' | 'sold'>>({});
+  const [selectedBandeja, setSelectedBandeja] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -87,6 +88,7 @@ export default function ScanPage() {
     try {
       const formData = new FormData();
       formData.append('file', imageFile);
+      if (selectedBandeja) formData.append('bandeja', String(selectedBandeja));
       const result = await api.createScan(formData);
       setScan(result);
       // Inicializar conteos con los valores sugeridos por la IA
@@ -130,6 +132,7 @@ export default function ScanPage() {
   const reset = () => {
     setStep('select'); setImageUrl(null); setImageFile(null);
     setScan(null); setCounts({}); setMissingDecisions({}); setError('');
+    setSelectedBandeja(null);
   };
 
   const currentStepIndex = stepIndex[step];
@@ -169,10 +172,36 @@ export default function ScanPage() {
           {step === 'select' && (
             <motion.div key="select" variants={pageVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.25 }}
               className="flex flex-col gap-4">
+
+              {/* Selector de bandeja */}
+              <div className="card p-4">
+                <p className="text-sm font-semibold text-slate-700 mb-3">¿Qué bandeja vas a escanear?</p>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <motion.button key={n} whileTap={{ scale: 0.92 }}
+                      onClick={() => setSelectedBandeja(n)}
+                      className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                        selectedBandeja === n
+                          ? 'gradient-primary text-white shadow-md'
+                          : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                      }`}>
+                      {n}
+                    </motion.button>
+                  ))}
+                </div>
+                {selectedBandeja && (
+                  <p className="text-xs text-indigo-600 font-medium mt-2 text-center">
+                    Bandeja {selectedBandeja} seleccionada
+                  </p>
+                )}
+              </div>
+
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
-              <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-                onClick={() => fileRef.current?.click()}
-                className="w-full gradient-primary text-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-lg-soft">
+              <motion.button whileHover={{ scale: selectedBandeja ? 1.01 : 1 }} whileTap={{ scale: selectedBandeja ? 0.98 : 1 }}
+                onClick={() => selectedBandeja && fileRef.current?.click()}
+                className={`w-full text-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-lg-soft transition-opacity ${
+                  selectedBandeja ? 'gradient-primary' : 'bg-slate-300 cursor-not-allowed opacity-60'
+                }`}>
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
                   <Camera size={32} className="text-white" />
                 </div>
@@ -181,9 +210,13 @@ export default function ScanPage() {
                   <p className="text-indigo-200 text-sm mt-1">Abre la cámara trasera</p>
                 </div>
               </motion.button>
-              <label className="w-full cursor-pointer">
-                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-                  className="card p-6 flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all">
+              <label className={`w-full ${selectedBandeja ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                <motion.div whileHover={{ scale: selectedBandeja ? 1.01 : 1 }} whileTap={{ scale: selectedBandeja ? 0.98 : 1 }}
+                  className={`card p-6 flex flex-col items-center gap-3 border-2 border-dashed transition-all ${
+                    selectedBandeja
+                      ? 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30'
+                      : 'border-slate-100 opacity-50'
+                  }`}>
                   <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
                     <Upload size={22} className="text-slate-400" />
                   </div>
@@ -192,7 +225,7 @@ export default function ScanPage() {
                     <p className="text-slate-400 text-sm">JPG, PNG, WEBP</p>
                   </div>
                 </motion.div>
-                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                <input type="file" accept="image/*" className="hidden" onChange={selectedBandeja ? handleFileChange : undefined} />
               </label>
               <p className="text-center text-xs text-slate-400 mt-1">
                 Asegúrate de que las etiquetas sean legibles
@@ -251,7 +284,14 @@ export default function ScanPage() {
             return (
               <motion.div key="results" variants={pageVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.25 }}
                 className="flex flex-col gap-4">
-                {/* Miniatura del scan */}
+                {/* Bandeja + miniatura del scan */}
+                {selectedBandeja && (
+                  <div className="flex items-center gap-2 px-1">
+                    <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                      Bandeja {selectedBandeja}
+                    </span>
+                  </div>
+                )}
                 <div className="card overflow-hidden">
                   <img src={`${API_URL}/images/${scan.photo_filename}`} alt="Imagen analizada" className="w-full object-contain max-h-48" />
                 </div>

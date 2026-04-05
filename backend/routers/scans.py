@@ -3,7 +3,7 @@ import uuid
 import logging
 from datetime import datetime
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Product, InventoryScan, ScanDetail, Movement
@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/scans", tags=["scans"])
 @router.post("", response_model=ScanResponse)
 async def create_scan(
     file: UploadFile = File(...),
+    bandeja: str = Form(""),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -57,6 +58,7 @@ async def create_scan(
         scanned_by=current_user.id,
         status="pending_review",
         ai_raw_response=raw_response,
+        notes=f"Bandeja {bandeja}" if bandeja else None,
     )
     db.add(scan)
     db.flush()
